@@ -1,0 +1,4 @@
+Flask==1.1.2
+numpy==1.18.3
+opencv-python==4.4.0.42
+tinydb==4.4.0

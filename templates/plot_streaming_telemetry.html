@@ -1,0 +1,103 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Streaming Telemetry</title>
+    <meta name="description" content="Streaming Telemetry">
+</head>
+
+<body>
+
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+
+        // next id for each metrics. It is always increasing.
+        MyGlobal = {};
+        MyGlobal.metricNextId = {};
+        MyGlobal.plotWindow = 100;
+
+        function UpdateCharts(data_point) {
+            // Initialize chart for metric that does not exist
+            for (var metric in data_point) {
+                var metric_div_id = "plot-" + metric;
+                var plot = document.getElementById(metric_div_id);
+                if (plot == null) {
+                    div = document.createElement("div");
+                    div.setAttribute("id", metric_div_id);
+                    document.body.append(div);
+                }
+
+                MyGlobal.metricNextId[metric] = 1;
+                var init_data = [{
+                    x: [0],
+                    y: [0],
+                    mode: 'line',
+                }];
+                Plotly.newPlot(metric_div_id, init_data);
+            }
+
+            // Update the data point on the charts.
+            for (var metric in data_point) {
+                var update = {
+                    x: [[MyGlobal.metricNextId[metric]++]],
+                    y: data_point[metric]
+                }
+
+                var olderTime = MyGlobal.metricNextId[metric] - 1 - MyGlobal.plotWindow;
+                var futureTime = MyGlobal.metricNextId[metric] + 1;
+                var windowView = {
+                    xaxis: {
+                        range: [olderTime, futureTime]
+                    }
+                };
+
+                var metric_div_id = "plot-" + metric
+                Plotly.relayout(metric_div_id, windowView);
+                Plotly.extendTraces(metric_div_id, update, [0]);
+            }
+
+        }
+
+        function StartStreaming() {
+            // Call streaming endpoint.
+            fetch('/data/streaming')
+                .then(response => response.body)
+                .then(rb => {
+                    const reader = rb.getReader();
+                    return new ReadableStream({
+                        start(controller) {
+                            // The following function handles each data chunk
+                            function push() {
+                                // "done" is a Boolean and value a "Uint8Array"
+                                reader.read().then(({ done, value }) => {
+                                    // If there is no more data to read
+                                    if (done) {
+                                        console.log('done', done);
+                                        controller.close();
+                                        return;
+                                    }
+                                    let utf8decoder = new TextDecoder(); // default 'utf-8' or 'utf8'
+
+                                    var data_point = utf8decoder.decode(value);
+                                    console.log(data_point);
+                                    UpdateCharts(data_point);
+                                    push();
+                                })
+                            }
+
+                            push();
+                        }
+                    });
+                }).catch(error => {
+                    console.error(error);
+                    alert("Error: " + error);
+                });
+        }
+
+        StartStreaming();
+    </script>
+
+</body>
