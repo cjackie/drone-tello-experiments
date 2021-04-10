@@ -72,14 +72,16 @@ class TelemetryStreamer:
                 buffer = sck.recv(BUFFER_SIZE)
                 out = buffer.decode('utf-8')
                 out = out.replace('\n', '')
-                print("out ===>> " + out)
+                # print("out ===>> " + out)
                 dic = collect_state(out)
                 #print(''.join(str(dic).split(' ')), file=sys.stdout, flush=True)
                 if self.save_data:
                     telemetry.insert(dic)
                 yield json.dumps(dic)
+                time.sleep(1/15.0)
         except Exception as e:
             print(str(e))
+        finally:
             sck.close()
            
 

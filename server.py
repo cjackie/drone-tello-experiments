@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, send_from_directory
 from tinydb import TinyDB, Query
 from telemetry_streamer import TelemetryStreamer
 import json
@@ -16,11 +16,15 @@ def data_dump():
 def data_streaming():  
   streamer = TelemetryStreamer()
   generator = (data_point for data_point in streamer.get())
-  return Response(generator)
+  return Response(generator, mimetype="application/json")
 
 @app.route('/plot/telemetry')
 def plot_telemetry():
   return render_template('plot_telemetry.html')
+
+@app.route('/js/<path:path>')
+def send_js(path):
+    return send_from_directory('js', path)
 
 @app.route('/plot/streaming_telemetry')
 def streaming_telemetry():
