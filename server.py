@@ -8,7 +8,7 @@ app = Flask(__name__)
 @app.route('/data/dump')
 def data_dump():
   db = TinyDB('data/drone_db.json')
-  telemetry = db.table("Telemetry")
+  telemetry = db.table("ThreadedStreamingTelemetry")
   all_data = telemetry.all()
   return Response(json.dumps(all_data), "application/json")
 
